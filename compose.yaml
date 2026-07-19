@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:18.4-alpine3.24
+    ports:
+      - 5431:5432
+    environment:
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=url_shortener
+    networks:
+      - url_shortener
+    container_name: postgres
+    volumes:
+      - url_shortener:/var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U postgres -d url_shortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    container_name: redis
+    networks:
+      - url_shortener
+    depends_on:
+      - postgres
+  url_shortener:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - 8082:8000
+    env_file:
+      - .env.docker
+    networks:
+      - url_shortener
+    container_name: url_shortener
+    depends_on:
+      
+      postgres:
+        condition: service_healthy    
+      redis:
+        condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    
+  redis_test:
+    image: redis
+    ports:
+      - 6378:6379
+    networks:
+     - url_shortener
+    depends_on:
+     - postgres
+
+  test:
+    build: .
+    volumes:
+     - .:/app
+    networks:
+     - url_shortener
+    env_file:
+     - .env.test
+    command: pytest 
+
+
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis_test:
+        condition:  service_started
+
+networks:
+  url_shortener:
+    name: url_shortener
+    driver: bridge
+volumes:
+    url_shortener:
+      driver: local
+    url_shortener_code:
+      driver: local
