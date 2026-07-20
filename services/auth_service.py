@@ -39,7 +39,7 @@ class AuthService:
             
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many reguest attempts."
+                detail="Too many register attempts."
                 )
 
         if self.db.query(User).filter(User.email==user.email).first():
@@ -54,7 +54,7 @@ class AuthService:
         self.db.add(new_user)
         self.db.commit()
         self.db.refresh(new_user)
-        log.bind(user_id=new_user.id).success("User registered  successfully")
+        log.bind(user_id=new_user.id).success("User registered successfully")
         return new_user
     
     def login(self,user:UserLogin,ip_hash)->dict:
@@ -74,14 +74,14 @@ class AuthService:
 
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many login attempts. "
+                detail="Too many login attempts."
                 )
         db_user=self.db.query(User).filter(User.email==user.email).first()
         
         if  db_user is None or not verify_password(user.password,db_user.password):
             AuthRedisService.lock_login(lock_key,fail_key)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail="email or password is wrong "
+                                detail="Invalid email or password."
                                 )
         
         AuthRedisService.clear_login_lock_fail(lock_key,fail_key)
@@ -137,7 +137,7 @@ class AuthService:
             RefreshToken.is_revoked.is_(False)).first()
         
         if refresh_token is None:
-            log.warning("Refresh token  not found in Database")
+            log.warning("Refresh token  not found in database")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                   detail="invalid refresh token")

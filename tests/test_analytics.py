@@ -13,6 +13,8 @@ def test_cannot_get_analytics_with_wrong_user(get_links,client,auth_headers2):
     code=get_links[1]
     answer2=client.get(f"/analytics/links/{code}",headers=auth_headers2)
     assert answer2.status_code==403
+
+    
 def test_cannot_get_analytics_without_token(get_links,client):
     code=get_links[1]
     answer2=client.get(f"/analytics/links/{code}")

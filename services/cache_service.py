@@ -30,7 +30,7 @@ class CacheService:
     def redirect_same_url_limit(ip_hash:str,code:str)->str:
         return f"redirect:ratelimit:ip:{ip_hash}:{code}"
     @staticmethod
-    def url_shorener_limit(user_id:int)->str:
+    def url_shortener_limit(user_id:int)->str:
         return f"create:{user_id}"
     @staticmethod
     def analytics_top_referrers(link_id:int)->str:

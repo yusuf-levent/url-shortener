@@ -32,19 +32,19 @@ class LinkService:
         ssrf_ip_check(original_url)
         if self.db.query(Link).filter(Link.original_url==original_url,Link.user_id==user_id).first():
             log.warning("Same url is already exist in database")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="same url")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Url already exists")
         if url.custom_code is not None:
 
             if self.db.query(Link).filter(Link.code==url.custom_code).first() :
                 log.warning("Custom code is already exist in database")
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="same code is taken")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Custom code is already taken")
             if url.custom_code in RESERVED_CODES :
                 log.warning("This custom code is reserved")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="code is reserved")
             code=url.custom_code
         else:
             code=self.benzersiz_code()
-        key=CacheService.url_shorener_limit(user_id)
+        key=CacheService.url_shortener_limit(user_id)
         
         if AuthRedisService.sliding_window_counter(
             key,
@@ -61,7 +61,7 @@ class LinkService:
             user_id=user_id,
             expires_at=url.expires_at,
             description=url.description
-            ,is_active=url.is_active)#url acitve kısmı null olursas bir sıkınıt olurmu yoksa null olunca otomatikmen true mu olur
+            ,is_active=url.is_active)
         
         self.db.add(yeni)
         self.db.commit()
@@ -76,8 +76,8 @@ class LinkService:
         if min_click is not None:
             query=query.filter(Link.click>=min_click)
         if search:
-            query=query.filter(Link.original_url.ilike(f"%{search}%"))#büyük küçük harfe duyarsız containsin aksıne
-        links=query.offset(skip).limit(limit=limit).all()#en son query ye all yazınca sorguyu başlatır yoksa şu öncekiler sadece qureye birşeyler eklyordu o kadar
+            query=query.filter(Link.original_url.ilike(f"%{search}%"))
+        links=query.offset(skip).limit(limit=limit).all()
         log.success("Listed user's links successfully")
         return links
     
@@ -112,7 +112,7 @@ class LinkService:
         log=logger.bind(user_id=user_id,code=code)
         log.info("Generate QR request received")
         link=self.query.get_link_without_cache(code,user_id)
-        short_url=f"{settings.BASE_URL.rstrip('/')}/r/{link.code}"#şu re stirp çift slash olmasın diye
+        short_url=f"{settings.BASE_URL.rstrip('/')}/r/{link.code}"#rstrip prevents double slash
         qr=QRCode(border=4,box_size=10)
         qr.add_data(short_url)
         qr.make(fit=True)
@@ -154,7 +154,6 @@ class LinkService:
             if not location:
                 return response
             current_url=urljoin(str(response.url),location)
-        print("here aaa")
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="too many redirects")
@@ -163,7 +162,7 @@ class LinkService:
 
     def check_link_health(self,code,user_id) ->HealthChecker:
         log=logger.bind(user_id=user_id,code=code)
-        log.info("Check  link health request received")
+        log.info("Check link health request received")
         cache=redis.get(f"link:{user_id}:{code}:health")
         if cache is not None:
             log.success("Checked link health")

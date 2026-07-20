@@ -62,7 +62,7 @@ class LinkQueryService:
             if expires_at.tzinfo is None:
                 expires_at=expires_at.replace(tzinfo=timezone.utc)
             if expires_at<datetime.now(timezone.utc):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="expires_at must be future time") 
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="expires_at must be future datatime.") 
         if not link.is_active:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="link is not active")
         return link

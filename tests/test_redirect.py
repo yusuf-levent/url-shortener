@@ -18,7 +18,7 @@ def test_redirect(client,shortener,db):
     assert answer2.headers["location"] == shortener.json()["original_url"]
 
 
-def test_cannot_redirect_pasive_url(client,auth_headers,valid_url,db):
+def test_cannot_redirect_passive_url(client,auth_headers,valid_url,db):
     payload={"original_url":valid_url.get("original_url"),"expires_at":valid_url.get("expires_at"),"is_active":False}
 
     answer=client.post("/links/",json=payload,headers=auth_headers)

@@ -57,6 +57,6 @@ def get_current_user(token:str=Depends(outh2_scheme),db:Session=Depends(get_db))
 def require_admin(current_user:User=Depends(get_current_user)):
     role=current_user.role
     if UserRoles.Admin!=role:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="require admin role")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Admin role required")
     return current_user
 

@@ -17,7 +17,7 @@ class AdminService:
     def get_user(self,id)->User|None:
         user=self.db.query(User).filter(User.id==id).first()
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail= "user is not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail= "User not found")
         return user
     
     def get_links(self,skip,limit,search:str|None=None)->list[Link]:
@@ -31,7 +31,7 @@ class AdminService:
     def get_link(self,id)->User|None:
         link=self.db.query(Link).filter(Link.id==id).first()
         if link is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail= "Link is not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail= "Link not found")
         return link
     
     def get_stats(self)->dict:

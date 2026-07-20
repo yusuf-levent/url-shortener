@@ -79,8 +79,7 @@ def test_generate_qr(client,auth_headers,shortener):
     assert answer2.status_code==200
     assert answer2.headers["content-type"]=="image/png"
     assert len(answer2.content) > 0#body boşmu yoksa png dönmüşmü diye kontrol 
-    assert answer2.content.startswith(b"\x89PNG\r\n\x1a\n")#bu png dosyalarının başında olan sabit byte imzasını kontorl ediyor
-
+    assert answer2.content.startswith(b"\x89PNG\r\n\x1a\n")#this checks if png file has the byte signiture at begining
 def test_generate_qr_with_wrong_user(client,auth_headers2,shortener):
     
     code=shortener.json()["code"]

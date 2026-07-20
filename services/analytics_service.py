@@ -203,6 +203,6 @@ class AnalyticsService:
             func.count(func.distinct(ClickLog.ip_hash))).filter(
                 ClickLog.link_id==link.id).scalar()
 
-        log.bind(unique_visitors=visitors).success("Request for unique visitors of link successfull")
+        log.bind(unique_visitors=visitors).success("Request for unique visitors of link successful.")
         return {"unique_visitors":visitors}
                

@@ -76,7 +76,7 @@ def test_redirect_delete_cache(auth_headers,client,valid_url,db):
     answer=client.post("/links/",json=valid_url,headers=auth_headers)
     assert answer.status_code==201
     code=answer.json()["code"]
-    print(code)
+
     answer=client.get(f"/r/{code}",follow_redirects=False)
     assert answer.status_code==302
     answer4=client.delete(f"/links/{code}",headers=auth_headers)

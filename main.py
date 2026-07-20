@@ -26,7 +26,7 @@ async def request_middleware(request:Request,call_next):
         return response
     
 @app.exception_handler(HTTPException)
-async def custom_http_excetion_handler(request:Request,exc:HTTPException):
+async def custom_http_exception_handler(request:Request,exc:HTTPException):
     log_message=f"HTTP Error {exc.status_code} | Detail: {exc.detail} | Path: {request.url.path}"
     if exc.status_code==401:
         logger.bind(category="auth").warning(log_message)
@@ -44,7 +44,8 @@ async def custom_http_excetion_handler(request:Request,exc:HTTPException):
 
 
 @app.get("/health",tags=["system"])
-def health():
+def health(request:Request):
+
     return {"status":"ok","version":"1.0.0"}
 
 app.include_router(links.router)

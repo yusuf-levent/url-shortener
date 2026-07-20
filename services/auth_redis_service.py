@@ -16,7 +16,7 @@ class AuthRedisService:
 
         current_count = redis.incr(current_key)#login için bir kere artırdık
         if current_count == 1:
-            redis.expire(current_key, window_seconds * 2)#burada da sornaki window kullansın diye exprie süresini diğer windowuda kapsayacak şekilde ayarladık
+            redis.expire(current_key, window_seconds * 2)
 
         previous_count_raw = redis.get(previous_key)
         previous_count = int(previous_count_raw) if previous_count_raw else 0
@@ -81,7 +81,7 @@ class AuthRedisService:
         
         fail_count=redis.incr(fail_key)
         if fail_count==1:
-            redis.expire(fail_key,60*60)#failed i tutyor 1 saat boyunca eğer sıkıntı olursa count arıtyor ve ona göre lock atıyor
+            redis.expire(fail_key,60*60)#keeps fail for one hour
         if fail_count>=15:
             redis.setex(lock_key,60*15,"1")
         elif fail_count>=10:
