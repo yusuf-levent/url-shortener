@@ -2,10 +2,8 @@ services:
   postgres:
     image: postgres:18.4-alpine3.24
    
-    environment:
-      - POSTGRES_PASSWORD=12345
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=url_shortener
+    env_file:
+      - .env.prod
     networks:
       - url_shortener
     container_name: postgres
