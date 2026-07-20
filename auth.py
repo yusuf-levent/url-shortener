@@ -6,6 +6,7 @@ from fastapi import Depends,HTTPException,status
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User,UserRoles
+from loguru import logger
 
 from config import settings
 SECRET_KEY=settings.SECRET_KEY
@@ -38,14 +39,18 @@ def get_current_user(token:str=Depends(outh2_scheme),db:Session=Depends(get_db))
         payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         email=payload.get("email")
         if email is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="geçersiz token")
+            logger.warning("Email not found in access token payload")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid access token")
         if payload.get("type")!="access":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="invalid token type")
+            logger.warning("Invalid token type")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid access token")
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="geçersiz token")
+        logger.warning("JWT decoding failed")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid access token")
     user=db.query(User).filter(User.email==email).first()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="kullanıcı yok")
+        logger.warning("User not found in database")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Invalid access token")
     return user
 
 

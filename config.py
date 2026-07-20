@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     BASE_URL:str
     REDIS_HOST:str
     REDIS_PORT:int
+    TZ:str
     
     model_config=SettingsConfigDict(env_file=".env")
 

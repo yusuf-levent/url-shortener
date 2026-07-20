@@ -124,15 +124,15 @@ class AnalyticsService:
             skip:int,
             limit:int,
            )->list[ClickLog]:
-        logger=logger.bind(user_id=user_id,code=code,skip=skip,limit=limit)
-        logger.info("Link click logs search initiated")
+        log=logger.bind(user_id=user_id,code=code,skip=skip,limit=limit)
+        log.info("Link click logs search initiated")
         link=self.query.get_link_without_cache(code,user_id)
        
         
         click_log=self.db.query(ClickLog).filter(
                 ClickLog.link_id==link.id).order_by(
                     ClickLog.clicked_at.desc()).offset(skip).limit(limit).all()
-        logger.bind(total_clicks=len(click_log)).success("Link click logs search successful")
+        log.bind(total_clicks=len(click_log)).success("Link click logs search successful")
         return click_log
     def get_daily_clicks(self,code:str,user_id:int):
         log=logger.bind(user_id=user_id,code=code)

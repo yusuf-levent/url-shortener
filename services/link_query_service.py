@@ -77,7 +77,7 @@ class LinkQueryService:
                     detail= "url does not exist"
                     )
         if link.user_id!=user_id:
-                log
+                
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="cannot get another user's link"

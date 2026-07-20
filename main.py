@@ -4,7 +4,6 @@ from routers import links,users,redirect,analytics,admin
 from utils import get_ip_hash
 from loguru import logger
 import services.logging_service
-status.ht
 
 
 app=FastAPI(
@@ -13,11 +12,17 @@ app=FastAPI(
     description="Url shortening, QR, redirect tracking and analytics API "
 )
 @app.middleware("http")
-async def ip_logger_middleware(request:Request,call_next):
+async def request_middleware(request:Request,call_next):
     ip_hash=get_ip_hash(request)
     request.state.ip_hash=ip_hash
     with logger.contextualize(ip=ip_hash):
         response=await call_next(request)
+        response.headers["X-Frame-Options"]="DENY"
+        response.headers["X-Content-Type-Options"]="nosniff"
+        response.headers["Referrer-Policy"]="strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"]=(
+            "camera=(), microphone=(), geolocation=()")
+        
         return response
     
 @app.exception_handler(HTTPException)
@@ -47,3 +52,4 @@ app.include_router(users.router)
 app.include_router(redirect.router)
 app.include_router(analytics.router)
 app.include_router(admin.router)
+
