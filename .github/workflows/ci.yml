@@ -39,6 +39,7 @@ jobs:
              echo "BASE_URL=http://localhost:8000" >> .env.test
              echo "REDIS_HOST=redis_test" >> .env.test
              echo  "REDIS_PORT=6379" >> .env.test
+             echo "TZ=Europe/Istanbul " >> .env.test
       - name: Run docker 
         run: docker compose up -d postgres redis_test
     
