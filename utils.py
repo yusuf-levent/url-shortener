@@ -10,21 +10,16 @@ def hash_email(plain_email:str)->str:
     return hashlib.sha256(valid_email.encode()).hexdigest()
 
 def get_ip_hash(request:Request)->str:
-    cf_ip = request.headers.get("CF-Connecting-IP")
-    x_forwarded_for = request.headers.get("X-Forwarded-For")
-    x_real_ip = request.headers.get("X-Real-IP")
-    
-    if cf_ip:
-        ip_address= cf_ip
-    elif x_forwarded_for:
-        ip_address= x_forwarded_for.split(",")[0].strip()
-    elif x_real_ip:
-        ip_address= x_real_ip
-    else:
-        ip_address=request.client.host
-    if ip_address=="unknown":
+    ip = (
+        request.headers.get("CF-Connecting-IP")
+        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP")
+        or request.client.host
+    )
+
+    if not ip  or ip=="unknown" :
         return "unknown"
-    return hashlib.sha256(f"{ip_address}{settings.SECRET_KEY}".encode()).hexdigest()
+    return hashlib.sha256(f"{ip}{settings.SECRET_KEY}".encode()).hexdigest()
 
 
 def ssrf_ip_check(url_str):

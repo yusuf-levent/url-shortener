@@ -16,13 +16,7 @@ async def request_middleware(request:Request,call_next):
     ip_hash=get_ip_hash(request)
     request.state.ip_hash=ip_hash
     with logger.contextualize(ip=ip_hash):
-        response=await call_next(request)
-        response.headers["X-Frame-Options"]="DENY"
-        response.headers["X-Content-Type-Options"]="nosniff"
-        response.headers["Referrer-Policy"]="strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"]=(
-            "camera=(), microphone=(), geolocation=()")
-        
+        response=await call_next(request)   
         return response
     
 @app.exception_handler(HTTPException)

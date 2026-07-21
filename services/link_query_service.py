@@ -66,6 +66,8 @@ class LinkQueryService:
         if not link.is_active:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="link is not active")
         return link
+    
+    
     def get_link_without_cache(self,code:str,user_id:int)->Link:
         link=self.db.query(
                 Link).filter(
