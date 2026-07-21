@@ -1,14 +1,13 @@
 # URL Shortener API
 
 A production-ready URL shortener API built with **FastAPI** and **PostgreSQL**.  
-It supports user authentication, URL shortening, QR code generation, public redirects, click tracking, analytics, database migrations, automated tests, and CI/CD deployment.
+It supports user authentication, URL shortening, QR code generation, public redirects, click tracking, analytics, Redis caching, database migrations, automated tests, and Docker Compose deployment.
 
 ## Live Demo
 
-- **API Base URL:** https://url-shortener-q10i.onrender.com
-- **Swagger Docs:** https://url-shortener-q10i.onrender.com/docs
-
-> Note: Some hosted services may take a few seconds to respond after being inactive.
+- **API Base URL:** http://go.weetis.com:8000
+- **Swagger Docs:** http://go.weetis.com:8000/docs
+- **Alternative:** http://www.go.weetis.com:8000
 
 ---
 
@@ -49,13 +48,18 @@ It supports user authentication, URL shortening, QR code generation, public redi
 - **QR Code Generation**
   - Generate a PNG QR code for a shortened URL
 
+- **Redis Caching**
+  - In-memory caching for frequently accessed links
+  - Redis-backed authentication token blacklisting
+  - Separate Redis instance for tests
+
 - **Database & Deployment**
   - PostgreSQL database
   - SQLAlchemy ORM
   - Alembic migrations
-  - Dockerfile included
+  - Docker & Docker Compose (development and production)
+  - Nginx reverse proxy
   - GitHub Actions CI/CD pipeline
-  - Deployed on Render
 
 - **Testing**
   - Pytest test suite
@@ -64,6 +68,8 @@ It supports user authentication, URL shortening, QR code generation, public redi
   - Redirect tests
   - QR code tests
   - Analytics tests
+  - Cache tests
+  - Security header tests
 
 ---
 
@@ -77,11 +83,12 @@ It supports user authentication, URL shortening, QR code generation, public redi
 | Migrations       | Alembic                           |
 | Validation       | Pydantic                          |
 | Authentication   | JWT, python-jose, passlib, bcrypt |
+| Caching          | Redis                             |
 | QR Code          | qrcode, Pillow                    |
 | Testing          | Pytest, FastAPI TestClient        |
 | CI/CD            | GitHub Actions                    |
-| Deployment       | Render                            |
-| Containerization | Docker                            |
+| Containerization | Docker, Docker Compose            |
+| Reverse Proxy    | Nginx                             |
 
 ---
 
@@ -190,7 +197,7 @@ Example response:
   "code": "abc123",
   "original_url": "https://github.com/",
   "click": 0,
-  "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+  "short_url": "http://go.weetis.com:8000/r/abc123"
 }
 ```
 
@@ -225,7 +232,7 @@ Example response:
       "accept_language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7"
     }
   ],
-  "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+  "short_url": "http://go.weetis.com:8000/r/abc123"
 }
 ```
 
@@ -245,7 +252,7 @@ Example response:
       "code": "abc123",
       "original_url": "https://github.com/",
       "click": 5,
-      "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+      "short_url": "http://go.weetis.com:8000/r/abc123"
     }
   ],
   "total_links": 1,
@@ -254,7 +261,7 @@ Example response:
       "code": "abc123",
       "original_url": "https://github.com/",
       "click": 5,
-      "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+      "short_url": "http://go.weetis.com:8000/r/abc123"
     }
   ],
   "total_clicks": 5
@@ -269,6 +276,7 @@ Example response:
 
 - Python 3.12+
 - PostgreSQL
+- Redis
 - Git
 
 ### 2. Clone the Repository
@@ -316,6 +324,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
 BASE_URL=http://localhost:8000
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+TZ=UTC
 ```
 
 ### 6. Create PostgreSQL Databases
@@ -363,23 +376,45 @@ The tests use `TEST_DATABASE_URL`. Make sure the test database exists before run
 
 ---
 
-## Docker Usage
+## Docker Compose Usage
 
-A `Dockerfile` is included for containerizing the FastAPI application.
+The project includes two Docker Compose configurations:
 
-Build the image:
+### Development (`compose.yaml`)
 
-```bash
-docker build -t url-shortener .
-```
-
-Run the container:
+Starts PostgreSQL, Redis, the application, and a test Redis instance.
 
 ```bash
-docker run -p 8000:8000 --env-file .env url-shortener
+docker compose up -d
 ```
 
-> Docker note: The current Docker setup runs the application container. PostgreSQL still needs to be available separately and `DATABASE_URL` must point to the correct database host. If PostgreSQL is running on the host machine, configure the database host accordingly.
+The API will be available at:
+
+```text
+http://localhost:8082
+```
+
+To run tests inside the container:
+
+```bash
+docker compose run --rm test
+```
+
+### Production (`compose.prod.yml`)
+
+Starts PostgreSQL, Redis, and the application without exposed development ports or test services.
+
+```bash
+docker compose -f compose.prod.yml up -d
+```
+
+> **Note:** The production setup uses a `.env.prod` file for environment variables. Make sure to create it with the appropriate values before running.
+
+---
+
+## Nginx Reverse Proxy
+
+The project includes an `nginx.conf` for use as a reverse proxy in front of the application. Configure your Nginx server to proxy requests to the running container (default port `8000`).
 
 ---
 
@@ -388,20 +423,55 @@ docker run -p 8000:8000 --env-file .env url-shortener
 ```text
 url_shortener/
 ├── alembic/                 # Database migrations
+├── migrations/              # Alembic migration files
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/            # Migration version files
 ├── routers/                 # API routers
-│   ├── users.py             # User authentication endpoints
+│   ├── admin.py             # Admin endpoints
+│   ├── analytics.py         # Analytics endpoints
 │   ├── links.py             # Link CRUD and QR endpoints
 │   ├── redirect.py          # Public redirect endpoint
-│   └── analytics.py         # Analytics endpoints
+│   └── users.py             # User authentication endpoints
+├── services/                # Business logic layer
+│   ├── admin_service.py     # Admin operations
+│   ├── analytics_service.py # Analytics logic
+│   ├── auth_redis_service.py# Redis-backed auth token management
+│   ├── auth_service.py      # Authentication logic
+│   ├── cache_service.py     # Redis caching logic
+│   ├── link_query_service.py# Link query operations
+│   ├── link_service.py      # Link CRUD logic
+│   ├── logging_service.py   # Logging utilities
+│   ├── redis_service.py     # Redis connection management
+│   └── redirect_service.py  # Redirect logic
 ├── tests/                   # Pytest test suite
+│   ├── conftest.py          # Test fixtures and configuration
+│   ├── test_admin.py
+│   ├── test_analytics.py
+│   ├── test_auth_login.py
+│   ├── test_auth_logout.py
+│   ├── test_auth_refresh.py
+│   ├── test_auth_register.py
+│   ├── test_cache.py
+│   ├── test_links.py
+│   ├── test_redirect.py
+│   ├── test_security.py
+│   └── test_units.py
 ├── auth.py                  # JWT and authentication helpers
-├── config.py                # App settings
+├── config.py                # App settings (includes Redis, TZ)
+├── constants.py             # Application constants
 ├── database.py              # Database connection and session
+├── Dockerfile               # Docker image definition
+├── main.py                  # FastAPI app entrypoint
 ├── models.py                # SQLAlchemy models
 ├── schemas.py               # Pydantic schemas
-├── main.py                  # FastAPI app entrypoint
 ├── requirements.txt         # Python dependencies
-└── Dockerfile               # Docker image definition
+├── compose.yaml             # Docker Compose (development)
+├── compose.prod.yml         # Docker Compose (production)
+├── nginx.conf               # Nginx reverse proxy configuration
+├── .dockerignore            # Docker ignore file
+├── pytest.ini               # Pytest configuration
+└── alembic.ini              # Alembic configuration
 ```
 
 ---
@@ -414,7 +484,6 @@ url_shortener/
 - Add browser/device parsing for user agents
 - Add rate limiting
 - Add background cleanup for expired refresh tokens
-- Add Docker Compose for PostgreSQL + API
 - Add a simple frontend dashboard
 
 ---
@@ -424,14 +493,13 @@ url_shortener/
 # URL Shortener API
 
 Bu proje **FastAPI** ve **PostgreSQL** ile geliştirilmiş, üretime yakın seviyede bir URL kısaltma API projesidir.  
-Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redirect, tıklama takibi, analytics, database migration, testler ve CI/CD süreçlerini içerir.
+Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redirect, tıklama takibi, analytics, Redis önbellekleme, database migration, testler ve Docker Compose dağıtımını içerir.
 
 ## Canlı Demo
 
-- **API Base URL:** https://url-shortener-q10i.onrender.com
-- **Swagger Docs:** https://url-shortener-q10i.onrender.com/docs
-
-> Not: Ücretsiz/uygun maliyetli hosting servislerinde API bir süre kullanılmadığında ilk istek birkaç saniye yavaş gelebilir.
+- **API Base URL:** http://go.weetis.com:8000
+- **Swagger Docs:** http://go.weetis.com:8000/docs
+- **Alternatif:** http://www.go.weetis.com:8000
 
 ---
 
@@ -446,18 +514,18 @@ Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redire
 
 - **Link Yönetimi**
   - Kısa link oluşturma
-  - Kullanıcının kendi linksini listeleme
+  - Kullanıcının kendi linklerini listeleme
   - Tek link detayını görüntüleme
   - Link güncelleme
   - Link silme
 
 - **Güvenlik ve Sahiplik Kontrolü**
-  - Kullanıcı sadece kendi linksini yönetebilir
+  - Kullanıcı sadece kendi linklerini yönetebilir
   - Korumalı endpointler Bearer token ister
   - Analytics verileri sadece link sahibine gösterilir
 
 - **Public Redirect**
-  - Kısa links public olarak çalışır
+  - Kısa linkler public olarak çalışır
   - Her redirect işleminde tıklama sayısı artar
   - Analytics için tıklama bilgileri kaydedilir
 
@@ -465,20 +533,25 @@ Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redire
   - Genel dashboard verisi
   - Toplam link sayısı
   - Toplam tıklama sayısı
-  - En çok tıklanan links
+  - En çok tıklanan linkler
   - Tek link için son tıklamalar
   - User agent, referer, dil bilgisi ve IP hash takibi
 
-- **QR code**
+- **QR Code**
   - Kısa link için PNG formatında QR code üretme
+
+- **Redis Önbellekleme**
+  - Sık erişilen linkler için bellek içi önbellekleme
+  - Redis tabanlı kimlik doğrulama token karaliste desteği
+  - Testler için ayrı Redis örneği
 
 - **Database ve Deployment**
   - PostgreSQL
   - SQLAlchemy ORM
   - Alembic migration
-  - Dockerfile
+  - Docker & Docker Compose (geliştirme ve üretim)
+  - Nginx reverse proxy
   - GitHub Actions CI/CD
-  - Render deployment
 
 - **Testler**
   - Pytest test yapısı
@@ -487,6 +560,8 @@ Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redire
   - Redirect testleri
   - QR code testleri
   - Analytics testleri
+  - Cache testleri
+  - Güvenlik başlık testleri
 
 ---
 
@@ -500,11 +575,12 @@ Kullanıcı kimlik doğrulama, link kısaltma, QR code oluşturma, public redire
 | Migration      | Alembic                           |
 | Validation     | Pydantic                          |
 | Authentication | JWT, python-jose, passlib, bcrypt |
+| Önbellekleme   | Redis                             |
 | QR Code        | qrcode, Pillow                    |
 | Test           | Pytest, FastAPI TestClient        |
 | CI/CD          | GitHub Actions                    |
-| Deployment     | Render                            |
-| Container      | Docker                            |
+| Konteyner      | Docker, Docker Compose            |
+| Reverse Proxy  | Nginx                             |
 
 ---
 
@@ -525,12 +601,12 @@ Authorization: Bearer <access_token>
 | `POST` | `/users/refresh` | Refresh token rotation yapar            | Hayır            |
 | `POST` | `/users/logout`  | Refresh token iptal eder                | Evet             |
 
-### links
+### Linkler
 
 | Method   | Endpoint          | Açıklama                         | Auth Gerekli mi? |
 | -------- | ----------------- | -------------------------------- | ---------------- |
 | `POST`   | `/links/`         | Yeni kısa link oluşturur         | Evet             |
-| `GET`    | `/links/`         | Kullanıcının linksini listeler | Evet             |
+| `GET`    | `/links/`         | Kullanıcının linklerini listeler | Evet             |
 | `GET`    | `/links/{code}`    | Tek link detayını getirir        | Evet             |
 | `PUT`    | `/links/{code}`    | Linki günceller                  | Evet             |
 | `DELETE` | `/links/{code}`    | Linki siler                      | Evet             |
@@ -540,7 +616,7 @@ Authorization: Bearer <access_token>
 
 | Method | Endpoint   | Açıklama                                          | Auth Gerekli mi? |
 | ------ | ---------- | ------------------------------------------------- | ---------------- |
-| `GET`  | `/r/{code}` | Orijinal URL’ye yönlendirir ve tıklamayı kaydeder | Hayır            |
+| `GET`  | `/r/{code}` | Orijinal URL'ye yönlendirir ve tıklamayı kaydeder | Hayır            |
 
 ### Analytics
 
@@ -613,7 +689,7 @@ Content-Type: application/json
   "code": "abc123",
   "original_url": "https://github.com/",
   "click": 0,
-  "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+  "short_url": "http://go.weetis.com:8000/r/abc123"
 }
 ```
 
@@ -623,7 +699,7 @@ Content-Type: application/json
 GET /r/abc123
 ```
 
-Bu istek kullanıcıyı orijinal URL’ye yönlendirir ve tıklama kaydı oluşturur.
+Bu istek kullanıcıyı orijinal URL'ye yönlendirir ve tıklama kaydı oluşturur.
 
 ### Link Analytics
 
@@ -648,7 +724,7 @@ Authorization: Bearer <access_token>
       "accept_language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7"
     }
   ],
-  "short_url": "https://url-shortener-q10i.onrender.com/r/abc123"
+  "short_url": "http://go.weetis.com:8000/r/abc123"
 }
 ```
 
@@ -660,6 +736,7 @@ Authorization: Bearer <access_token>
 
 - Python 3.12+
 - PostgreSQL
+- Redis
 - Git
 
 ### 2. Repoyu Klonla
@@ -707,6 +784,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
 BASE_URL=http://localhost:8000
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+TZ=UTC
 ```
 
 ### 6. PostgreSQL Database Oluştur
@@ -748,27 +830,49 @@ http://127.0.0.1:8000/docs
 pytest
 ```
 
-Testler `TEST_DATABASE_URL` değerini kullanır. Testleri çalıştırmadan önce test database’in oluşturulmuş olması gerekir.
+Testler `TEST_DATABASE_URL` değerini kullanır. Testleri çalıştırmadan önce test database'in oluşturulmuş olması gerekir.
 
 ---
 
-## Docker Kullanımı
+## Docker Compose Kullanımı
 
-Projede FastAPI uygulamasını container haline getirmek için `Dockerfile` bulunmaktadır.
+Proje iki Docker Compose yapılandırması içerir:
 
-Image build et:
+### Geliştirme (`compose.yaml`)
 
-```bash
-docker build -t url-shortener .
-```
-
-Container çalıştır:
+PostgreSQL, Redis, uygulama ve test Redis örneğini başlatır.
 
 ```bash
-docker run -p 8000:8000 --env-file .env url-shortener
+docker compose up -d
 ```
 
-> Docker notu: Mevcut Docker yapısı uygulama container’ını çalıştırır. PostgreSQL ayrıca erişilebilir olmalıdır ve `DATABASE_URL` doğru database host’una bakmalıdır. PostgreSQL host makinede çalışıyorsa database host ayarını buna göre düzenlemek gerekir.
+API adresi:
+
+```text
+http://localhost:8082
+```
+
+Testleri container içinde çalıştırmak için:
+
+```bash
+docker compose run --rm test
+```
+
+### Üretim (`compose.prod.yml`)
+
+PostgreSQL, Redis ve uygulamayı geliştirme portları ve test servisleri olmadan başlatır.
+
+```bash
+docker compose -f compose.prod.yml up -d
+```
+
+> **Not:** Üretim yapılandırması `.env.prod` dosyasını kullanır. Çalıştırmadan önce uygun değerlerle oluşturulmalıdır.
+
+---
+
+## Nginx Reverse Proxy
+
+Proje, uygulamanın önünde reverse proxy olarak kullanılmak üzere bir `nginx.conf` dosyası içerir. Nginx sunucunuzu, çalışan container'a (varsayılan port `8000`) istekleri yönlendirecek şekilde yapılandırın.
 
 ---
 
@@ -777,20 +881,55 @@ docker run -p 8000:8000 --env-file .env url-shortener
 ```text
 url_shortener/
 ├── alembic/                 # Database migrations
+├── migrations/              # Alembic migration dosyaları
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/            # Migration versiyon dosyaları
 ├── routers/                 # API router dosyaları
-│   ├── users.py             # Kullanıcı ve auth endpointleri
+│   ├── admin.py             # Admin endpointleri
+│   ├── analytics.py         # Analytics endpointleri
 │   ├── links.py             # Link CRUD ve QR endpointleri
 │   ├── redirect.py          # Public redirect endpointi
-│   └── analytics.py         # Analytics endpointleri
+│   └── users.py             # Kullanıcı ve auth endpointleri
+├── services/                # İş mantığı katmanı
+│   ├── admin_service.py     # Admin işlemleri
+│   ├── analytics_service.py # Analytics mantığı
+│   ├── auth_redis_service.py# Redis tabanlı token yönetimi
+│   ├── auth_service.py      # Kimlik doğrulama mantığı
+│   ├── cache_service.py     # Redis önbellekleme mantığı
+│   ├── link_query_service.py# Link sorgu işlemleri
+│   ├── link_service.py      # Link CRUD mantığı
+│   ├── logging_service.py   # Loglama araçları
+│   ├── redis_service.py     # Redis bağlantı yönetimi
+│   └── redirect_service.py  # Redirect mantığı
 ├── tests/                   # Pytest testleri
+│   ├── conftest.py          # Test fixture ve konfigürasyon
+│   ├── test_admin.py
+│   ├── test_analytics.py
+│   ├── test_auth_login.py
+│   ├── test_auth_logout.py
+│   ├── test_auth_refresh.py
+│   ├── test_auth_register.py
+│   ├── test_cache.py
+│   ├── test_links.py
+│   ├── test_redirect.py
+│   ├── test_security.py
+│   └── test_units.py
 ├── auth.py                  # JWT ve authentication yardımcıları
-├── config.py                # Uygulama ayarları
+├── config.py                # Uygulama ayarları (Redis, TZ dahil)
+├── constants.py             # Uygulama sabitleri
 ├── database.py              # Database bağlantısı ve session
+├── Dockerfile               # Docker image tanımı
+├── main.py                  # FastAPI app başlangıcı
 ├── models.py                # SQLAlchemy modelleri
 ├── schemas.py               # Pydantic şemaları
-├── main.py                  # FastAPI app başlangıcı
 ├── requirements.txt         # Python paketleri
-└── Dockerfile               # Docker image tanımı
+├── compose.yaml             # Docker Compose (geliştirme)
+├── compose.prod.yml         # Docker Compose (üretim)
+├── nginx.conf               # Nginx reverse proxy konfigürasyonu
+├── .dockerignore            # Docker ignore dosyası
+├── pytest.ini               # Pytest konfigürasyonu
+└── alembic.ini              # Alembic konfigürasyonu
 ```
 
 ---
@@ -803,7 +942,6 @@ url_shortener/
 - User agent üzerinden browser/device analizi
 - Rate limiting
 - Expired refresh token cleanup
-- PostgreSQL + API için Docker Compose
 - Basit bir frontend dashboard
 
 ---
