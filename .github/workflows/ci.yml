@@ -9,10 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    
-    
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,7 +27,10 @@ jobs:
              echo "TZ=Europe/Istanbul " >> .env.test
       - name: Run docker 
         run: docker compose -f compose.test.yml up -d postgres redis_test
-    
+      - name: Show running conteyners
+        run: docker ps -a
+      - name: Show postgres logs
+        run: docker logs posgtres
       - name: Wait postgres
         run: |
           until docker exec postgres pg_isready -U postgres; do

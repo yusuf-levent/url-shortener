@@ -33,6 +33,7 @@ services:
      - url_shortener
     depends_on:
      - postgres
+    container_name: redis_test
 
   url_shortener:
     build: .
