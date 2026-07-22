@@ -38,11 +38,15 @@ services:
         condition: service_healthy    
       redis:
         condition: service_started
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "5"
+
+
+        
   web:
     image: nginx:alpine
     ports:
