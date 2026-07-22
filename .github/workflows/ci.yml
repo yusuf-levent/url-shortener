@@ -28,18 +28,19 @@ jobs:
       - name: Run docker 
         run: docker compose -f compose.test.yml up -d postgres redis_test
       - name: Show running conteyners
-        run: docker ps -a
-      - name: Show postgres logs
-        run: docker logs postgres
+        run: docker ps 
+      
       - name: Wait postgres
         run: |
           until docker exec postgres pg_isready -U postgres; do
             sleep 2
             done
+      - name: Show postgres logs
+        run: docker logs postgres
       - name:  Create test database
         run: docker exec postgres psql -U postgres -d postgres -c "CREATE DATABASE url_shortener;"
       - name: Run tests
         run: docker compose -f compose.test.yml run --rm test
       - name: Stop containers
         if: always()
-        run: docker compose down -v
+        run: docker compose -f compose.test.yml  down -v
