@@ -30,7 +30,7 @@ jobs:
       - name: Show running conteyners
         run: docker ps -a
       - name: Show postgres logs
-        run: docker logs posgtres
+        run: docker logs postgres
       - name: Wait postgres
         run: |
           until docker exec postgres pg_isready -U postgres; do
