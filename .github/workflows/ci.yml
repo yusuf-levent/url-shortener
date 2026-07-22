@@ -9,25 +9,41 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+
+      ALGORITHM: ${{ vars.ALGORITHM }}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${{ vars.REFRESH_TOKEN_EXPIRE_DAYS }}
+      BASE_URL: ${{ vars.BASE_URL }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+      TZ: ${{ vars.TZ }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
      
       - name: Create .env.test
         run: |
-             echo "SECRET_KEY=ŞSDKFSFJSŞDFUJSOIAFSIFJSKDFJASŞLDK" >> .env.test
-             echo "ALGORITHM=HS256" >> .env.test
-             echo  "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env.test
-             echo "REFRESH_TOKEN_EXPIRE_DAYS=30" >> .env.test
-             echo "DATABASE_URL=postgresql://postgres:12345@postgres:5432/url_shortener" >> .env.test
-             echo "TEST_DATABASE_URL=postgresql://postgres:12345@postgres:5432/test_url_database" >> .env.test
-             echo "BASE_URL=http://localhost" >> .env.test
-             echo "REDIS_HOST=redis_test" >> .env.test
-             echo  "REDIS_PORT=6379" >> .env.test
-             echo "TZ=Europe/Istanbul " >> .env.test
-             echo "POSTGRES_PASSWORD=12345" >> .env.test
-             echo  "POSTGRES_USER=postgres" >> .env.test
-             echo "POSTGRES_DB=test_url_database" >> .env.test
+             echo "SECRET_KEY=$SECRET_KEY" >> .env.test
+              echo "ALGORITHM=$ALGORITHM" >> .env.test
+              echo "ACCESS_TOKEN_EXPIRE_MINUTES=$ACCESS_TOKEN_EXPIRE_MINUTES" >> .env.test
+              echo "REFRESH_TOKEN_EXPIRE_DAYS=$REFRESH_TOKEN_EXPIRE_DAYS" >> .env.test
+              echo "DATABASE_URL=$DATABASE_URL" >> .env.test
+              echo "TEST_DATABASE_URL=$TEST_DATABASE_URL" >> .env.test
+              echo "BASE_URL=$BASE_URL" >> .env.test
+              echo "REDIS_HOST=$REDIS_HOST" >> .env.test
+              echo "REDIS_PORT=$REDIS_PORT" >> .env.test
+              echo "TZ=$TZ" >> .env.test
+              echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env.test
+              echo "POSTGRES_USER=$POSTGRES_USER" >> .env.test
+              echo "POSTGRES_DB=$POSTGRES_DB" >> .env.test
       - name: Run docker 
         run: docker compose -f compose.test.yml up -d postgres redis_test
    

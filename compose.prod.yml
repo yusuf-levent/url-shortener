@@ -49,11 +49,21 @@ services:
       - 80:80
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
     networks:
       - url_shortener
     depends_on:
       url_shortener:
         condition: service_started
+  certbot:
+    image: certbot/certbot:nightly
+    container_name: certbot
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+
+
 
 networks:
   url_shortener:
@@ -61,4 +71,8 @@ networks:
     driver: bridge
 volumes:
     url_shortener:
+      driver: local
+    letsencrypt:
+      driver: local
+    certbot_www:
       driver: local
