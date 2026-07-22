@@ -25,18 +25,19 @@ jobs:
              echo "REDIS_HOST=redis_test" >> .env.test
              echo  "REDIS_PORT=6379" >> .env.test
              echo "TZ=Europe/Istanbul " >> .env.test
+             echo "POSTGRES_PASSWORD=12345" >> .env.test
+             echo  "POSTGRES_USER=postgres" >> .env.test
+             echo "POSTGRES_DB=test_url_database" >> .env.test
       - name: Run docker 
         run: docker compose -f compose.test.yml up -d postgres redis_test
-      - name: Show running conteyners
-        run: docker ps 
+   
       
       - name: Wait postgres
         run: |
           until docker exec postgres pg_isready -U postgres; do
             sleep 2
             done
-      - name: Show postgres logs
-        run: docker logs postgres
+
       - name:  Create test database
         run: docker exec postgres psql -U postgres -d postgres -c "CREATE DATABASE url_shortener;"
       - name: Run tests
