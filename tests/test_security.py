@@ -1,5 +1,6 @@
-def test_check_security_headers(client):
-    response=client.get("/health")
+import httpx
+def test_check_security_headers():
+    response=httpx.get("http://web/health")
     assert response.status_code==200
     
     assert response.headers["X-Frame-Options"]=="DENY"

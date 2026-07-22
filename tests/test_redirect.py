@@ -41,7 +41,7 @@ def test_cannot_redirect_expired_url(client,shortener,db):
     clicks=link.click
     redirected_response=client.get(f"/r/{code}",follow_redirects=False)
     assert redirected_response.status_code==400
-    assert redirected_response.json()["detail"] == "expires_at must be future time"
+    assert redirected_response.json()["detail"]== "expires_at must be future datatime."
     assert clicks==link.click
 
 

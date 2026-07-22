@@ -27,6 +27,7 @@ def ssrf_ip_check(url_str):
     parsed_url=urlparse(url_str)
     if parsed_url.scheme not in ["http","https"]:
         logger.warning("Url is not http or https")
+
         #only accept these  protocols
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -48,7 +49,7 @@ def ssrf_ip_check(url_str):
         infos=socket.getaddrinfo(host,port)
         # Resolve the hostname to all available IPv4 and IPv6 addresses.
     except (socket.gaierror,ValueError):
-
+        logger.warning("Socket getaddrinfo error or value error")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The provided URL is invalid or not reachable."

@@ -3,15 +3,13 @@ services:
     image: postgres:18.4-alpine3.24
     ports:
       - 5431:5432
-    environment:
-      - POSTGRES_PASSWORD=12345
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=url_shortener
+    env_file:
+      - .env.docker
     networks:
       - url_shortener
     container_name: postgres
     volumes:
-      - url_shortener:/var/lib/postgresql/18/docker
+      - url_shortener_dev:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL","pg_isready -U postgres -d url_shortener"]
       interval: 5s
@@ -30,8 +28,8 @@ services:
     build: .
     volumes:
       - .:/app
-    ports:
-      - 8082:8000
+    expose:
+      - 8000
     env_file:
       - .env.docker
     networks:
@@ -50,10 +48,6 @@ services:
         max-file: "5"
     
 
-
-
-
-
   web:
     image: nginx
     ports:
@@ -63,26 +57,6 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       
-  redis_test:
-    image: redis
-    ports:
-      - 6378:6379
-    networks:
-     - url_shortener
-    depends_on:
-     - postgres
-
-  test:
-    build: .
-    volumes:
-     - .:/app
-    networks:
-     - url_shortener
-    env_file:
-     - .env.test
-    command: pytest -k test_check_security_headers
-
-
 
     depends_on:
       postgres:
@@ -95,7 +69,6 @@ networks:
     name: url_shortener
     driver: bridge
 volumes:
-    url_shortener:
+    url_shortener_dev:
       driver: local
-    url_shortener_code:
-      driver: local
+   
